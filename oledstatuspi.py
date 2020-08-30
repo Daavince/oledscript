@@ -90,11 +90,11 @@ NrCores = subprocess.check_output(cmd, shell=True).decode("utf-8")
 def ServiceStatus(Service, Type):
      if Type == "SystemCtl":
           Before = "systemctl status"
-          After = " --lines=0"
+          After = ""
      else:
           Before = "service"
           After = " status"
-     cmd1 = "{} {}{} | grep \"active (running)\" -c | sed 's/1/\'OKx\'/; s/0/\'NOx\'/'".format(Before, Service, After)
+     cmd1 = "{} {}{} | head -n 6 | grep \"active (running)\" -c | sed 's/1/\'OKx\'/; s/0/\'NOx\'/'".format(Before, Service, After)
      status = subprocess.check_output(cmd1, shell=True).decode("utf-8")
      if status[0:2] == "OK":
           cmd2 = "{} {}{} | grep -E '(├─|└─)' -m 1 | sed 's/─/ /' | awk {}".format(Before, Service, After, "'{printf \"%0.f\", $2}'")
