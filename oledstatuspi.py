@@ -90,7 +90,7 @@ NrCores = subprocess.check_output(cmd, shell=True).decode("utf-8")
 def ServiceStatus(Service, Type):
      if Type == "SystemCtl":
           Before = "systemctl status"
-          After = ""
+          After = " --lines=0"
      else:
           Before = "service"
           After = " status"
