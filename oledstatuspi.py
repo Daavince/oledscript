@@ -8,7 +8,7 @@ import configparser
 
 # Read file with user defined settings
 config = configparser.ConfigParser()
-config.read('/home/pi/oledscript/oledstatuspi.conf')
+config.read(['/home/pi/oledscript/oledstatuspi.conf', '/home/pi/oledscript/oledstatuspi.local.conf'])
 # Get name of the system from user settings
 SysName = config['general']['SysName']
 # Get performance variables from user settings (high refresh rates impact CPU usage significantly)
