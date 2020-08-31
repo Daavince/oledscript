@@ -6,4 +6,6 @@ throttle status, undervoltage status and a configurable part (through *.conf fil
 2) status check of SystemCtl or Service running on the system
 3) mounted drive connectivity and used disk %
 
+![Example OLED running on Raspberry](https://github.com/Daavince/oledscript/blob/master/img/A0B4DA71-DE2C-4019-8153-48288BDFE438.jpeg)
+
 The purpose is to be able to monitor a headless raspberry without the need to SSH into the device too often to check on various things
