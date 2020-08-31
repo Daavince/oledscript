@@ -1,5 +1,5 @@
 # Oledscript
-This is a project that displays a status dashboard on an oled display connected to GPIO pins on a linux system.
+This is a project that displays a status dashboard on an oled display connected to GPIO pins on a system running Linux.
 It is tested with Raspberry Pi 4 and 3B+. The status dashboard has a fixed part with Temp, CPU and mem usage, boot disk % used, ip addres,
 throttle status, undervoltage status and a configurable part (through *.conf file) which allows to setup 
 1) internet connectivity monitoring based on a list of servers to ping
