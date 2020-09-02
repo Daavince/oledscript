@@ -8,4 +8,8 @@ throttle status, undervoltage status and a configurable part (through *.conf fil
 
 ![Example OLED running on Raspberry](https://github.com/Daavince/oledscript/blob/master/img/A0B4DA71-DE2C-4019-8153-48288BDFE438.jpeg)
 
-The purpose is to be able to monitor a headless raspberry without the need to SSH into the device too often to check on various things
+The purpose is to be able to monitor a headless raspberry without the need to SSH into the device too often to check on various relevant operating variables.
+
+## Example use cases
+1) A raspberry with home automation software running (e.g. domoticz) could be easily monitored and troubleshooted. Home automation software status, IOT devices connectivity, SD card space available, power supply reliability (related to undervoltage) can all be checked with an instant look at the display.
+2) A remotely run battery operated raspberry can be checked for power reliability of the battery source by the telegram script, allowing remote updates without need to turn on service like ssh if that would be undesireable
