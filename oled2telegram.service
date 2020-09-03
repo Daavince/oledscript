@@ -1,0 +1,12 @@
+ [Unit]
+ Description=Oled2telegram
+ After=multi-user.target
+
+ [Service]
+ User=pi
+ Type=idle
+ ExecStart=/usr/bin/python3 -u /home/pi/oledscript/oled2telegram.py
+
+ [Install]
+ WantedBy=multi-user.target
+
