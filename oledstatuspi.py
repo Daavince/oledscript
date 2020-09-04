@@ -94,14 +94,27 @@ def ServiceStatus(Service, Type):
      else:
           Before = "service"
           After = " status"
-     cmd1 = "{} {}{} | head -n 6 | grep \"active (running)\" -c | sed 's/1/\'OKx\'/; s/0/\'NOx\'/'".format(Before, Service, After)
-     status = subprocess.check_output(cmd1, shell=True).decode("utf-8")
+     #cmd1 = "{} {}{} | head -n 6 | grep \"active (running)\" -c | sed 's/1/\'OKx\'/; s/0/\'NOx\'/'".format(Before, Service, After)
+     cmd1 = "{} {}{} | head -n 6 | sed -n -e 's/^.*Active: //p' | sed 's/failed/ERx/;s/inactive/NOx/;s/active (running)/OKx/;s/active (exited)/ERx/'".format(Before, Service, After)
+     #print (cmd1)
+     try:
+          status = subprocess.check_output(cmd1, shell=True).decode("utf-8")[0:3]
+     except subprocess.CalledProcessError as e:
+          status = "--x"
+     if len(status) == 0:
+          status = "??x"
+     #print (status)
      if status[0:2] == "OK":
           cmd2 = "{} {}{} | grep -E '(├─|└─)' -m 1 | sed 's/─/ /' | awk {}".format(Before, Service, After, "'{printf \"%0.f\", $2}'")
           process = subprocess.check_output(cmd2, shell=True).decode("utf-8")
           cmd3 = "ps -p {} -o etimes= | awk {}".format(process, "'{printf \"%0.f\\n\", $1}'")
           uptimeS = subprocess.check_output(cmd3, shell=True).decode("utf-8")
-          uptime = str(round(int(float(uptimeS)) / TimeDenom))
+          try:
+               uptime = str(round(int(float(uptimeS)) / TimeDenom))
+          except:
+               print (cmd2)
+               print (cmd3)
+               print (uptimeS)
      else:
           uptime = ""
      return status, uptime
@@ -145,7 +158,7 @@ def TestConnection(Servers, ConnectionLastDown):
 def SetColor(Service):
      if Service[0:3] in ('OKx'):
           StatCol = "#00FF00"
-     elif Service[0:3] in ('T1n', 'T2n', 'T3n', 'UVn', 'NOd'):
+     elif Service[0:3] in ('T1n', 'T2n', 'T3n', 'UVn', 'NOd', 'ERx'):
           StatCol = "#FF5733"
      elif Service[0:3] in ('T1p', 'T2p', 'T3p', 'UVp', 'OKp'):
           StatCol = "#FCA903"
