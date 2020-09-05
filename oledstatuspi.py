@@ -112,6 +112,7 @@ def ServiceStatus(Service, Type):
           try:
                uptime = str(round(int(float(uptimeS)) / TimeDenom))
           except:
+               uptime = ""
                print (cmd2)
                print (cmd3)
                print (uptimeS)
