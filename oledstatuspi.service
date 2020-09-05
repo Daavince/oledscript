@@ -1,0 +1,12 @@
+ [Unit]
+ Description=Oledscript
+ After=multi-user.target
+
+ [Service]
+ User=pi
+ Type=idle
+ ExecStart=/usr/bin/python3 -u /home/pi/oledscript/oledstatuspi.py
+
+ [Install]
+ WantedBy=multi-user.target
+
