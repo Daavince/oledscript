@@ -16,6 +16,8 @@ RefreshTime = float(config['performance']['RefreshTime'])
 LoopsBeforeRefreshMedium = int(config['performance']['LoopsBeforeRefreshMedium'])
 LoopsBeforeRefreshLow = int(config['performance']['LoopsBeforeRefreshLow'])
 # Get configuration of status items
+LINE01 = config['statusselection']['LINE01'].split(",")
+LINE02 = config['statusselection']['LINE02'].split(",")
 LINE03 = config['statusselection']['LINE03'].split(",")
 LINE04 = config['statusselection']['LINE04'].split(",")
 LINE05 = config['statusselection']['LINE05'].split(",")
@@ -24,11 +26,7 @@ LINE07 = config['statusselection']['LINE07'].split(",")
 LINE08 = config['statusselection']['LINE08'].split(",")
 LINE09 = config['statusselection']['LINE09'].split(",")
 LINE10 = config['statusselection']['LINE10'].split(",")
-LINES = [LINE03, LINE04, LINE05, LINE06, LINE07, LINE08, LINE09, LINE10]
-
-#for j in range(len(LINES)):
-#     for k in range(len(LINES[j])):
-#          print (LINES[j][k])
+LINES = [LINE01, LINE02, LINE03, LINE04, LINE05, LINE06, LINE07, LINE08, LINE09, LINE10]
 
 # Configuration for CS and DC pins (these are PiTFT defaults):
 cs_pin = digitalio.DigitalInOut(board.CE0)
@@ -61,14 +59,43 @@ draw = ImageDraw.Draw(image)
 # Draw a black filled box to clear the image.
 draw.rectangle((0, 0, width, height), outline="#000000", fill="#000000")
 disp.image(image)
-# First define some constants to allow easy positioning of text.
-padding = -2
-indent = 1
-x = 0
-y = 0
+
 # Load a TTF font.
 # Some other nice fonts to try: http://www.dafont.com/bitmap.php
 font1 = ImageFont.truetype("/usr/share/fonts/truetype/VCR_OSD_MONO_1.001.ttf", 11)
+# First define some constants to allow easy positioning of text.
+padding = -2
+indent = 1
+spacing = font1.getsize("Test")[1]
+x = 0
+y = 0
+
+# Prepare configuration for evaluation and drawing (expand the split lines)
+numinserts = 0
+for j in range(len(LINES)):
+     if len(LINES[j+numinserts]) > 4:
+          if LINES[j+numinserts][4] == "SPLIT":
+               LINES.insert(j+1+numinserts, LINES[j+numinserts][5:])
+               LINES[j+numinserts] = LINES[j+numinserts][0:4]
+               LINES[j+numinserts] = ['S', 0, 0] + LINES[j+numinserts]
+               LINES[j+1+numinserts] = ['S', -spacing, 66] + LINES[j+1+numinserts]
+               numinserts += 1
+          else:
+               LINES[j+numinserts] = ['F', 0, 0] + LINES[j+numinserts]
+     elif len(LINES[j+numinserts]) > 2:
+          if LINES[j+numinserts][1] == "SPLIT":
+               LINES.insert(j+1+numinserts, LINES[j+numinserts][2:])
+               LINES[j+numinserts] = LINES[j+numinserts][0:1]
+               LINES[j+numinserts] = ['S', 0, 0] + LINES[j+numinserts]
+               LINES[j+1+numinserts] = ['S', -spacing, 66] + LINES[j+1+numinserts]
+               numinserts += 1
+          else:
+               LINES[j+numinserts] = ['F', 0, 0] + LINES[j+numinserts]
+     else:
+          LINES[j+numinserts] = ['F', 0, 0] + LINES[j+numinserts]
+
+#for j in range(len(LINES)):
+#     print (LINES[j])
 
 # Set a initial value for a few variables
 SysUpLastPowerIssue = 0
@@ -113,7 +140,9 @@ def ServiceStatus(Service, Type):
                uptime = str(round(int(float(uptimeS)) / TimeDenom))
           except:
                uptime = ""
+               print ("start:")
                print (cmd2)
+               print (process)
                print (cmd3)
                print (uptimeS)
      else:
@@ -172,7 +201,6 @@ while True:
      #draw.rectangle((0, 0, width, height), outline=0, fill=0)
 
      if LowRefreshCount == 1:
-
           # IP address (only in rare cases it changes during a running session)
           #cmd = "hostname -I | cut -d' ' -f1 | tr -d ."
           cmd = "hostname -I | cut -d' ' -f1"
@@ -236,7 +264,7 @@ while True:
 
      PowerUp = int(SysUpS) - int(SysUpLastPowerIssue) # calculate time without power issue
      PowerUp = str(round(PowerUp/TimeDenom)) # convert to string
-     PowerUpspaces = "   "[0:3-len(PowerUp)] # calculate trailing spaces for dashboard
+     #PowerUpspaces = "   "[0:3-len(PowerUp)] # calculate trailing spaces for dashboard
 
      if Throttle[1:2] == '3':
           Sys = 'T3n'
@@ -257,7 +285,7 @@ while True:
      x = indent
      y = padding
 
-     draw.rectangle((0, y+1, 128, y + 5 * font1.getsize("Test")[1]), outline="#000000", fill="#000000")
+     draw.rectangle((0, y+1, 128, y + 3 * font1.getsize("Test")[1]), outline="#000000", fill="#000000")
 
      draw.text((x, y), "T    |CPU    |RAM    ".format(Temp, CPUspaces, CPU, RAMspaces, RAM), font=font1, fill="#0077FF")
      draw.text((x, y), "  {}C    {}{}%    {}{}%".format(Temp, CPUspaces, CPU, RAMspaces, RAM), font=font1, fill="#FFFFFF")
@@ -281,47 +309,85 @@ while True:
           draw.rectangle((x+2, y+2, x+4, y+4), outline="#0077FF", fill="#0077FF")
           draw.rectangle((x+6, y+6, x+8, y+8), outline="#0077FF", fill="#0077FF")
           OddRun = True
-     draw.text((x, y), "  SERVICE UP     {}".format(UnitTime), font=font1, fill="#0077FF")
-     y += font1.getsize("Test")[1]
-     StatusColor = SetColor(Sys)
-     draw.rectangle((x-1, y+1, x+13, y+9), outline=StatusColor, fill=StatusColor)
-     draw.text((x, y), "   {} {}{}{}".format(SysName, SysOSversion, "                 "[:17-len(SysName)-len(SysOSversion)-len(SysUp)], SysUp), font=font1, fill="#FFFFFF")
-     draw.text((x, y), "{}                   ".format(Sys[0:2]), font=font1, fill="#000000")
-     y += font1.getsize("Test")[1]
-     StatusColor = SetColor(Power)
-     draw.rectangle((x-1, y+1, x+13, y+9), outline=StatusColor, fill=StatusColor)
-     draw.text((x, y), "   POWER          {}{}".format(PowerUpspaces,PowerUp), font=font1, fill="#0077FF")
-     draw.text((x, y), "{}                   ".format(Power[0:2]), font=font1, fill="#000000")
+     draw.text((x, y), "  SERVICE UP ({})".format(UnitTime), font=font1, fill="#0077FF")
+
+     #y += spacing
+     #y += spacing
+     #StatusColor = SetColor(Power)
+     #draw.rectangle((x-1, y+1, x+12, y+9), outline=StatusColor, fill=StatusColor)
+     #draw.text((x, y), "{}                   ".format(Power[0:2]), font=font1, fill="#000000")
 
      for i in range(len(LINES)):
-          y += font1.getsize("Test")[1]
-          if (LINES[i][0] == '0' and FirstRun) or  (LINES[i][0] == 'H') or (LINES[i][0] == 'M' and MediumRefreshCount == 1) or (LINES[i][0] == 'L' and LowRefreshCount == 1):
-               draw.rectangle((0, y, 128, y + font1.getsize("Test")[1]), outline=0, fill=0)
-               if LINES[i][1] in ("Service", "SystemCtl"):
-                    LINESTATUS = LINES[i] + list(ServiceStatus(LINES[i][2], LINES[i][1]))
-                    StatusColor = SetColor(LINESTATUS[4])
-                    draw.rectangle((x-1, y+1, x+13, y+9), outline=StatusColor, fill=StatusColor)
-                    draw.text((x, y), "   {}{}{}".format(LINESTATUS[3], "              "[:1+17-len(LINESTATUS[3])-len(LINESTATUS[5])], LINESTATUS[5]), font=font1, fill=StatusColor)
-                    draw.text((x, y), "{}                   ".format(LINESTATUS[4][0:2]), font=font1, fill="#000000")
-               elif LINES[i][1] == 'Drive':
+          y += spacing + LINES[i][1]
+
+          if LINES[i][3] == 'System':
+               StatusColor = SetColor(Sys)
+               if LINES[i][0] == 'S':
+                    draw.rectangle((0 + LINES[i][2], y, 64 + LINES[i][2], y + spacing), outline=0, fill=0)
+                    draw.text((x-3+LINES[i][2], y), "   {}".format(SysName[0:4]), font=font1, fill="#FFFFFF")
+                    draw.text((x+LINES[i][2], y), "      {}{}".format("     "[:1+3-len(SysUp)], SysUp), font=font1, fill="#FFFFFF")
+               else:
+                    draw.rectangle((0, y, 128, y + spacing), outline=0, fill=0)
+                    draw.text((x-3, y), "   {} {}".format(SysName, SysOSversion), font=font1, fill="#FFFFFF")
+                    draw.text((x, y), "    {}{}".format("                 "[:17-len(SysUp)], SysUp), font=font1, fill="#FFFFFF")
+               draw.rectangle((x-1+LINES[i][2], y+1, x+12+LINES[i][2], y+9), outline=StatusColor, fill=StatusColor)
+               draw.text((x+LINES[i][2], y), "{}                   ".format(Sys[0:2]), font=font1, fill="#000000")
+
+          if LINES[i][3] == 'Power':
+               StatusColor = SetColor(Power)
+               if LINES[i][0] == 'S':
+                    draw.rectangle((0 + LINES[i][2], y, 64 + LINES[i][2], y + spacing), outline=0, fill=0)
+                    draw.text((x-3+LINES[i][2], y), "   PWR", font=font1, fill="#0077FF")
+                    draw.text((x+LINES[i][2], y), "      {}{}".format("     "[:1+3-len(PowerUp)], PowerUp), font=font1, fill="#0077FF")
+               else:
+                    draw.rectangle((0, y, 128, y + spacing), outline=0, fill=0)
+                    #draw.text((x-3, y), "   {} {}".format(SysName, SysOSversion), font=font1, fill="#FFFFFF")
+                    draw.text((x-3, y), "   POWER", font=font1, fill="#0077FF")
+                    draw.text((x, y), "    {}{}".format("                 "[:17-len(PowerUp)], PowerUp), font=font1, fill="#0077FF")
+               draw.rectangle((x-1+LINES[i][2], y+1, x+12+LINES[i][2], y+9), outline=StatusColor, fill=StatusColor)
+               draw.text((x+LINES[i][2], y), "{}                   ".format(Power[0:2]), font=font1, fill="#000000")
+
+          elif (LINES[i][3] == '0' and FirstRun) or (LINES[i][3] == 'H') or (LINES[i][3] == 'M' and MediumRefreshCount == 1) or (LINES[i][3] == 'L' and LowRefreshCount == 1):
+               if LINES[i][0] == 'S':
+                    draw.rectangle((0 + LINES[i][2], y, 64 + LINES[i][2], y + spacing), outline=0, fill=0)
+               else:
+                    draw.rectangle((0, y, 128, y + spacing), outline=0, fill=0)
+               if LINES[i][4] in ("Service", "SystemCtl"):
+                    LINESTATUS = LINES[i] + list(ServiceStatus(LINES[i][5], LINES[i][4]))
+                    StatusColor = SetColor(LINESTATUS[7])
+                    draw.rectangle((x-1+LINES[i][2], y+1, x+12+LINES[i][2], y+9), outline=StatusColor, fill=StatusColor)
+                    draw.text((x+LINES[i][2], y), "{}                   ".format(LINESTATUS[7][0:2]), font=font1, fill="#000000")
+                    if LINES[i][0] == 'S':
+                         draw.text((x-3+LINES[i][2], y), "   {}".format(LINESTATUS[6]), font=font1, fill=StatusColor)
+                         draw.text((x+LINES[i][2], y), "      {}{}".format("     "[:1+3-len(LINESTATUS[8])], LINESTATUS[8]), font=font1, fill=StatusColor)
+                    else:
+                         draw.text((x-3, y), "   {}".format(LINESTATUS[6]), font=font1, fill=StatusColor)
+                         draw.text((x, y), "   {}{}".format("                 "[:1+17-len(LINESTATUS[8])], LINESTATUS[8]), font=font1, fill=StatusColor)
+               elif LINES[i][4] == 'Drive':
                     LINESTATUS = LINES[i] + list(DriveStatus(LINES[i][2]))
-                    StatusColor = SetColor(LINESTATUS[4])
-                    draw.rectangle((x-1, y+1, x+13, y+9), outline=StatusColor, fill=StatusColor)
-                    draw.text((x, y), "   {}".format(LINESTATUS[3]), font=font1, fill=StatusColor)
-                    draw.text((x, y), "             {}{}{}{}%".format("    "[0:4-len(LINESTATUS[5])], LINESTATUS[5], "   "[0:3-len(LINESTATUS[6])], LINESTATUS[6]), font=font1, fill=StatusColor)
-                    draw.text((x, y), "{}                   ".format(LINESTATUS[4][0:2]), font=font1, fill="#000000")
-               elif LINES[i][1] == 'Connectivity':
-                    if len(LINES[i]) == 4:
+                    StatusColor = SetColor(LINESTATUS[7])
+                    draw.rectangle((x-1+LINES[i][2], y+1, x+12+LINES[i][2], y+9), outline=StatusColor, fill=StatusColor)
+                    draw.text((x+LINES[i][2], y), "{}                   ".format(LINESTATUS[7][0:2]), font=font1, fill="#000000")
+                    draw.text((x-3, y), "   {}".format(LINESTATUS[6]), font=font1, fill=StatusColor)
+                    draw.text((x, y), "             {}{}{}{}%".format("    "[0:4-len(LINESTATUS[8])], LINESTATUS[8], "   "[0:3-len(LINESTATUS[9])], LINESTATUS[9]), font=font1, fill=StatusColor)
+               elif LINES[i][4] == 'Connectivity':
+                    if len(LINES[i]) == 7:
                          LINES[i] = LINES[i] + [ConnectionLastDown]
-                    LINESTATUS = LINES[i] + list(TestConnection(LINES[i][3], LINES[i][4]))
-                    LINES[i][4] = LINESTATUS[7]
-                    StatusColor = SetColor(LINESTATUS[5])
+                    LINESTATUS = LINES[i] + list(TestConnection(LINES[i][6], LINES[i][7]))
+                    LINES[i][7] = LINESTATUS[10]
+                    StatusColor = SetColor(LINESTATUS[8])
+                    draw.rectangle((x-1+LINES[i][2], y+1, x+12+LINES[i][2], y+9), outline=StatusColor, fill=StatusColor)
+                    draw.text((x+LINES[i][2], y), "{}                   ".format(LINESTATUS[8][0:2]), font=font1, fill="#000000")
+                    if LINES[i][0] == 'S':
+                         draw.text((x-3+LINES[i][2], y), "   {}".format(LINESTATUS[5]), font=font1, fill=StatusColor)
+                         draw.text((x+LINES[i][2], y), "      {}{}".format("     "[:1+3-len(LINESTATUS[9])], LINESTATUS[9]), font=font1, fill=StatusColor)
+                    else:
+                         draw.text((x-3, y), "   {}".format(LINESTATUS[5]), font=font1, fill=StatusColor)
+                         draw.text((x, y), "   {}{}".format("                 "[:1+17-len(LINESTATUS[9])], LINESTATUS[9]), font=font1, fill=StatusColor)
                     #print (LINESTATUS)
-                    draw.rectangle((x-1, y+1, x+13, y+9), outline=StatusColor, fill=StatusColor)
-                    draw.text((x, y), "   {}{}{}".format(LINESTATUS[2],"                 "[:1+17-len(LINESTATUS[2])-len(LINESTATUS[6])],LINESTATUS[6]), font=font1, fill=StatusColor)
-                    draw.text((x, y), "{}                   ".format(LINESTATUS[5][0:2]), font=font1, fill="#000000")
-               elif LINES[i][1] == 'Header':
-                    draw.text((x, y), LINES[i][2], font=font1, fill="#0077FF")
+#                    draw.text((x-3, y), "   {}{}{}".format(LINESTATUS[5],"                 "[:1+17-len(LINESTATUS[5])-len(LINESTATUS[9])],LINESTATUS[9]), font=font1, fill=StatusColor)
+               elif LINES[i][4] == 'Header':
+                    draw.text((x, y), LINES[i][5], font=font1, fill="#0077FF")
                     FirstRun = False
                else:
                     Non = 0
