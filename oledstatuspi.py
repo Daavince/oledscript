@@ -364,7 +364,7 @@ while True:
                          draw.text((x-3, y), "   {}".format(LINESTATUS[6]), font=font1, fill=StatusColor)
                          draw.text((x, y), "   {}{}".format("                 "[:1+17-len(LINESTATUS[8])], LINESTATUS[8]), font=font1, fill=StatusColor)
                elif LINES[i][4] == 'Drive':
-                    LINESTATUS = LINES[i] + list(DriveStatus(LINES[i][2]))
+                    LINESTATUS = LINES[i] + list(DriveStatus(LINES[i][5]))
                     StatusColor = SetColor(LINESTATUS[7])
                     draw.rectangle((x-1+LINES[i][2], y+1, x+12+LINES[i][2], y+9), outline=StatusColor, fill=StatusColor)
                     draw.text((x+LINES[i][2], y), "{}                   ".format(LINESTATUS[7][0:2]), font=font1, fill="#000000")
