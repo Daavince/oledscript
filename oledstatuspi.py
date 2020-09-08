@@ -132,8 +132,17 @@ def ServiceStatus(Service, Type):
           status = "??x"
      #print (status)
      if status[0:2] == "OK":
-          cmd2 = "{} {}{} | grep -E '(├─|└─)' -m 1 | sed 's/─/ /' | awk {}".format(Before, Service, After, "'{printf \"%0.f\", $2}'")
-          process = subprocess.check_output(cmd2, shell=True).decode("utf-8")
+          #cmd0 = "{} {}{} | grep 'Main PID' -m 1".format(Before, Service, After)
+          #out = subprocess.check_output(cmd0, shell=True).decode("utf-8")
+          #print ("start")
+          #print (out)
+          #print ("stop")
+          cmd2a = "{} {}{} | grep 'Main PID' -m 1 | awk {}".format(Before, Service, After, "'{printf \"%0.f\", $3}'")
+          cmd2b = "{} {}{} | grep -E '(├─|└─)' -m 1 | sed 's/─/ /' | awk {}".format(Before, Service, After, "'{printf \"%0.f\", $2}'")
+          process = subprocess.check_output(cmd2a, shell=True).decode("utf-8")
+          if len(process) < 1: # in this case, Main PID does not exist and running process needs to be identified from tree with cmd2b
+               process = subprocess.check_output(cmd2b, shell=True).decode("utf-8")
+          #print (len(process))
           cmd3 = "ps -p {} -o etimes= | awk {}".format(process, "'{printf \"%0.f\\n\", $1}'")
           uptimeS = subprocess.check_output(cmd3, shell=True).decode("utf-8")
           try:
@@ -141,7 +150,8 @@ def ServiceStatus(Service, Type):
           except:
                uptime = ""
                print ("start:")
-               print (cmd2)
+               print (cmd2a)
+               print (cmd2b)
                print (process)
                print (cmd3)
                print (uptimeS)
