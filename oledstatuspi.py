@@ -11,6 +11,12 @@ config = configparser.ConfigParser()
 config.read(['/home/pi/oledscript/oledstatuspi.conf', '/home/pi/oledscript/oledstatuspi.local.conf'])
 # Get name of the system from user settings
 SysName = config['general']['SysName']
+# Get rotation orientation of display
+DisplayRotation = int(config['general']['DisplayRotation'])
+# Get display font
+FontLocation = config['general']['FontLocation']
+FontSize = int(config['general']['FontSize'])
+
 # Get performance variables from user settings (high refresh rates impact CPU usage significantly)
 RefreshTime = float(config['performance']['RefreshTime'])
 LoopsBeforeRefreshMedium = int(config['performance']['LoopsBeforeRefreshMedium'])
@@ -38,7 +44,7 @@ BAUDRATE = 24000000
 spi = board.SPI()
 disp = ssd1351.SSD1351(                         # 1.5" SSD1351
     spi,
-    rotation=90,  # 2.2", 2.4", 2.8", 3.2" ILI9341
+    rotation=DisplayRotation,  # 2.2", 2.4", 2.8", 3.2" ILI9341
     cs=cs_pin,
     dc=dc_pin,
     rst=reset_pin,
@@ -62,7 +68,8 @@ disp.image(image)
 
 # Load a TTF font.
 # Some other nice fonts to try: http://www.dafont.com/bitmap.php
-font1 = ImageFont.truetype("/usr/share/fonts/truetype/VCR_OSD_MONO_1.001.ttf", 11)
+#font1 = ImageFont.truetype("/usr/share/fonts/truetype/VCR_OSD_MONO_1.001.ttf", 11)
+font1 = ImageFont.truetype(FontLocation, FontSize)
 # First define some constants to allow easy positioning of text.
 padding = -2
 indent = 1
