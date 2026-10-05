@@ -56,6 +56,23 @@ else:
 image = Image.new("RGB", (width, height))
 # Get drawing object to draw on image.
 draw = ImageDraw.Draw(image)
+
+# Pillow/FreeType on Buster rendered VCR OSD Mono 11px with an exact
+
+# 6-pixel character advance. Preserve that layout on Bookworm.
+
+_original_draw_text = draw.text
+
+def draw_text_buster(xy, text, font=None, fill=None, **kwargs):
+
+    x, y = xy
+
+    for char in str(text):
+
+        _original_draw_text((x, y), char, font=font, fill=fill, **kwargs)
+
+        x += 6
+
 # Draw a black filled box to clear the image.
 draw.rectangle((0, 0, width, height), outline="#000000", fill="#000000")
 disp.image(image)
@@ -297,13 +314,13 @@ while True:
 
      draw.rectangle((0, y+1, 128, y + 3 * font1.getsize("Test")[1]), outline="#000000", fill="#000000")
 
-     draw.text((x, y), "T    |CPU    |RAM    ".format(Temp, CPUspaces, CPU, RAMspaces, RAM), font=font1, fill="#0077FF")
-     draw.text((x, y), "  {}C    {}{}%    {}{}%".format(Temp, CPUspaces, CPU, RAMspaces, RAM), font=font1, fill="#FFFFFF")
+     draw_text_buster((x, y), "T    |CPU    |RAM    ".format(Temp, CPUspaces, CPU, RAMspaces, RAM), font=font1, fill="#0077FF")
+     draw_text_buster((x, y), "  {}C    {}{}%    {}{}%".format(Temp, CPUspaces, CPU, RAMspaces, RAM), font=font1, fill="#FFFFFF")
      y += font1.getsize("Test")[1]
-     draw.text((x, y), "DISK    |", font=font1, fill="#0077FF")
-     draw.text((x, y), "    {}{}".format(Diskspaces, Disk), font=font1, fill="#FFFFFF")
-     draw.text((x, y), "         {}".format(IP1), font=font1, fill="#FFFFFF")
-     draw.text((x, y), "         {}".format(IP2), font=font1, fill="#FF00FF")
+     draw_text_buster((x, y), "DISK    |", font=font1, fill="#0077FF")
+     draw_text_buster((x, y), "    {}{}".format(Diskspaces, Disk), font=font1, fill="#FFFFFF")
+     draw_text_buster((x, y), "         {}".format(IP1), font=font1, fill="#FFFFFF")
+     draw_text_buster((x, y), "         {}".format(IP2), font=font1, fill="#FF00FF")
      y += font1.getsize("Test")[1]
      #draw.rectangle((x-1, y+1, x-1+width, y+9), outline=(11, 103, 97), fill=(11, 103, 97))
      #draw.rectangle((x+1, y+2, x+6, y+7), outline="#0077FF", fill="#0077FF")
@@ -319,13 +336,13 @@ while True:
           draw.rectangle((x+2, y+2, x+4, y+4), outline="#0077FF", fill="#0077FF")
           draw.rectangle((x+6, y+6, x+8, y+8), outline="#0077FF", fill="#0077FF")
           OddRun = True
-     draw.text((x, y), "  SERVICE UP ({})".format(UnitTime), font=font1, fill="#0077FF")
+     draw_text_buster((x, y), "  SERVICE UP ({})".format(UnitTime), font=font1, fill="#0077FF")
 
      #y += spacing
      #y += spacing
      #StatusColor = SetColor(Power)
      #draw.rectangle((x-1, y+1, x+12, y+9), outline=StatusColor, fill=StatusColor)
-     #draw.text((x, y), "{}                   ".format(Power[0:2]), font=font1, fill="#000000")
+     #draw_text_buster((x, y), "{}                   ".format(Power[0:2]), font=font1, fill="#000000")
 
      for i in range(len(LINES)):
           y += spacing + LINES[i][1]
@@ -334,28 +351,28 @@ while True:
                StatusColor = SetColor(Sys)
                if LINES[i][0] == 'S':
                     draw.rectangle((0 + LINES[i][2], y, 64 + LINES[i][2], y + spacing), outline=0, fill=0)
-                    draw.text((x-3+LINES[i][2], y), "   {}".format(SysName[0:4]), font=font1, fill="#FFFFFF")
-                    draw.text((x+LINES[i][2], y), "      {}{}".format("     "[:1+3-len(SysUp)], SysUp), font=font1, fill="#FFFFFF")
+                    draw_text_buster((x-3+LINES[i][2], y), "   {}".format(SysName[0:4]), font=font1, fill="#FFFFFF")
+                    draw_text_buster((x+LINES[i][2], y), "      {}{}".format("     "[:1+3-len(SysUp)], SysUp), font=font1, fill="#FFFFFF")
                else:
                     draw.rectangle((0, y, 128, y + spacing), outline=0, fill=0)
-                    draw.text((x-3, y), "   {} {}".format(SysName, SysOSversion), font=font1, fill="#FFFFFF")
-                    draw.text((x, y), "    {}{}".format("                 "[:17-len(SysUp)], SysUp), font=font1, fill="#FFFFFF")
+                    draw_text_buster((x-3, y), "   {} {}".format(SysName, SysOSversion), font=font1, fill="#FFFFFF")
+                    draw_text_buster((x, y), "    {}{}".format("                 "[:17-len(SysUp)], SysUp), font=font1, fill="#FFFFFF")
                draw.rectangle((x-1+LINES[i][2], y+1, x+12+LINES[i][2], y+9), outline=StatusColor, fill=StatusColor)
-               draw.text((x+LINES[i][2], y), "{}                   ".format(Sys[0:2]), font=font1, fill="#000000")
+               draw_text_buster((x+LINES[i][2], y), "{}                   ".format(Sys[0:2]), font=font1, fill="#000000")
 
           if LINES[i][3] == 'Power':
                StatusColor = SetColor(Power)
                if LINES[i][0] == 'S':
                     draw.rectangle((0 + LINES[i][2], y, 64 + LINES[i][2], y + spacing), outline=0, fill=0)
-                    draw.text((x-3+LINES[i][2], y), "   PWR", font=font1, fill="#0077FF")
-                    draw.text((x+LINES[i][2], y), "      {}{}".format("     "[:1+3-len(PowerUp)], PowerUp), font=font1, fill="#0077FF")
+                    draw_text_buster((x-3+LINES[i][2], y), "   PWR", font=font1, fill="#0077FF")
+                    draw_text_buster((x+LINES[i][2], y), "      {}{}".format("     "[:1+3-len(PowerUp)], PowerUp), font=font1, fill="#0077FF")
                else:
                     draw.rectangle((0, y, 128, y + spacing), outline=0, fill=0)
-                    #draw.text((x-3, y), "   {} {}".format(SysName, SysOSversion), font=font1, fill="#FFFFFF")
-                    draw.text((x-3, y), "   POWER", font=font1, fill="#0077FF")
-                    draw.text((x, y), "    {}{}".format("                 "[:17-len(PowerUp)], PowerUp), font=font1, fill="#0077FF")
+                    #draw_text_buster((x-3, y), "   {} {}".format(SysName, SysOSversion), font=font1, fill="#FFFFFF")
+                    draw_text_buster((x-3, y), "   POWER", font=font1, fill="#0077FF")
+                    draw_text_buster((x, y), "    {}{}".format("                 "[:17-len(PowerUp)], PowerUp), font=font1, fill="#0077FF")
                draw.rectangle((x-1+LINES[i][2], y+1, x+12+LINES[i][2], y+9), outline=StatusColor, fill=StatusColor)
-               draw.text((x+LINES[i][2], y), "{}                   ".format(Power[0:2]), font=font1, fill="#000000")
+               draw_text_buster((x+LINES[i][2], y), "{}                   ".format(Power[0:2]), font=font1, fill="#000000")
 
           elif (LINES[i][3] == '0' and FirstRun) or (LINES[i][3] == 'H') or (LINES[i][3] == 'M' and MediumRefreshCount == 1) or (LINES[i][3] == 'L' and LowRefreshCount == 1):
                if LINES[i][0] == 'S':
@@ -366,20 +383,20 @@ while True:
                     LINESTATUS = LINES[i] + list(ServiceStatus(LINES[i][5], LINES[i][4]))
                     StatusColor = SetColor(LINESTATUS[7])
                     draw.rectangle((x-1+LINES[i][2], y+1, x+12+LINES[i][2], y+9), outline=StatusColor, fill=StatusColor)
-                    draw.text((x+LINES[i][2], y), "{}                   ".format(LINESTATUS[7][0:2]), font=font1, fill="#000000")
+                    draw_text_buster((x+LINES[i][2], y), "{}                   ".format(LINESTATUS[7][0:2]), font=font1, fill="#000000")
                     if LINES[i][0] == 'S':
-                         draw.text((x-3+LINES[i][2], y), "   {}".format(LINESTATUS[6]), font=font1, fill=StatusColor)
-                         draw.text((x+LINES[i][2], y), "      {}{}".format("     "[:1+3-len(LINESTATUS[8])], LINESTATUS[8]), font=font1, fill=StatusColor)
+                         draw_text_buster((x-3+LINES[i][2], y), "   {}".format(LINESTATUS[6]), font=font1, fill=StatusColor)
+                         draw_text_buster((x+LINES[i][2], y), "      {}{}".format("     "[:1+3-len(LINESTATUS[8])], LINESTATUS[8]), font=font1, fill=StatusColor)
                     else:
-                         draw.text((x-3, y), "   {}".format(LINESTATUS[6]), font=font1, fill=StatusColor)
-                         draw.text((x, y), "   {}{}".format("                 "[:1+17-len(LINESTATUS[8])], LINESTATUS[8]), font=font1, fill=StatusColor)
+                         draw_text_buster((x-3, y), "   {}".format(LINESTATUS[6]), font=font1, fill=StatusColor)
+                         draw_text_buster((x, y), "   {}{}".format("                 "[:1+17-len(LINESTATUS[8])], LINESTATUS[8]), font=font1, fill=StatusColor)
                elif LINES[i][4] == 'Drive':
                     LINESTATUS = LINES[i] + list(DriveStatus(LINES[i][5]))
                     StatusColor = SetColor(LINESTATUS[7])
                     draw.rectangle((x-1+LINES[i][2], y+1, x+12+LINES[i][2], y+9), outline=StatusColor, fill=StatusColor)
-                    draw.text((x+LINES[i][2], y), "{}                   ".format(LINESTATUS[7][0:2]), font=font1, fill="#000000")
-                    draw.text((x-3, y), "   {}".format(LINESTATUS[6]), font=font1, fill=StatusColor)
-                    draw.text((x, y), "             {}{}{}{}%".format("    "[0:4-len(LINESTATUS[8])], LINESTATUS[8], "   "[0:3-len(LINESTATUS[9])], LINESTATUS[9]), font=font1, fill=StatusColor)
+                    draw_text_buster((x+LINES[i][2], y), "{}                   ".format(LINESTATUS[7][0:2]), font=font1, fill="#000000")
+                    draw_text_buster((x-3, y), "   {}".format(LINESTATUS[6]), font=font1, fill=StatusColor)
+                    draw_text_buster((x, y), "             {}{}{}{}%".format("    "[0:4-len(LINESTATUS[8])], LINESTATUS[8], "   "[0:3-len(LINESTATUS[9])], LINESTATUS[9]), font=font1, fill=StatusColor)
                elif LINES[i][4] == 'Connectivity':
                     if len(LINES[i]) == 7:
                          LINES[i] = LINES[i] + [ConnectionLastDown]
@@ -387,17 +404,17 @@ while True:
                     LINES[i][7] = LINESTATUS[10]
                     StatusColor = SetColor(LINESTATUS[8])
                     draw.rectangle((x-1+LINES[i][2], y+1, x+12+LINES[i][2], y+9), outline=StatusColor, fill=StatusColor)
-                    draw.text((x+LINES[i][2], y), "{}                   ".format(LINESTATUS[8][0:2]), font=font1, fill="#000000")
+                    draw_text_buster((x+LINES[i][2], y), "{}                   ".format(LINESTATUS[8][0:2]), font=font1, fill="#000000")
                     if LINES[i][0] == 'S':
-                         draw.text((x-3+LINES[i][2], y), "   {}".format(LINESTATUS[5]), font=font1, fill=StatusColor)
-                         draw.text((x+LINES[i][2], y), "      {}{}".format("     "[:1+3-len(LINESTATUS[9])], LINESTATUS[9]), font=font1, fill=StatusColor)
+                         draw_text_buster((x-3+LINES[i][2], y), "   {}".format(LINESTATUS[5]), font=font1, fill=StatusColor)
+                         draw_text_buster((x+LINES[i][2], y), "      {}{}".format("     "[:1+3-len(LINESTATUS[9])], LINESTATUS[9]), font=font1, fill=StatusColor)
                     else:
-                         draw.text((x-3, y), "   {}".format(LINESTATUS[5]), font=font1, fill=StatusColor)
-                         draw.text((x, y), "   {}{}".format("                 "[:1+17-len(LINESTATUS[9])], LINESTATUS[9]), font=font1, fill=StatusColor)
+                         draw_text_buster((x-3, y), "   {}".format(LINESTATUS[5]), font=font1, fill=StatusColor)
+                         draw_text_buster((x, y), "   {}{}".format("                 "[:1+17-len(LINESTATUS[9])], LINESTATUS[9]), font=font1, fill=StatusColor)
                     #print (LINESTATUS)
-#                    draw.text((x-3, y), "   {}{}{}".format(LINESTATUS[5],"                 "[:1+17-len(LINESTATUS[5])-len(LINESTATUS[9])],LINESTATUS[9]), font=font1, fill=StatusColor)
+#                    draw_text_buster((x-3, y), "   {}{}{}".format(LINESTATUS[5],"                 "[:1+17-len(LINESTATUS[5])-len(LINESTATUS[9])],LINESTATUS[9]), font=font1, fill=StatusColor)
                elif LINES[i][4] == 'Header':
-                    draw.text((x, y), LINES[i][5], font=font1, fill="#0077FF")
+                    draw_text_buster((x, y), LINES[i][5], font=font1, fill="#0077FF")
                     FirstRun = False
                else:
                     Non = 0
