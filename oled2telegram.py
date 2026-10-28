@@ -1,87 +1,103 @@
+
+import configparser
+import logging
+import time
+from pathlib import Path
 import requests
 from PIL import Image
-import json
-import configparser
-import time
 
-# Read file with user defined settings
+CONFIG_FILES = [
+    "/home/pi/oledscript/oledstatuspi.conf",
+    "/home/pi/oledscript/oledstatuspi.local.conf",
+]
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+)
+
+logger = logging.getLogger("oled2telegram")
 config = configparser.ConfigParser()
-config.read(['/home/pi/oledscript/oledstatuspi.conf', '/home/pi/oledscript/oledstatuspi.local.conf'])
-# Get name of the system from user settings
-bot_token = config['telegram']['bot_token']
-bot_chatID = config['telegram']['bot_chatID']
-ImageFilePath = config['telegram']['ImageFilePath']
-#'/dev/shm/oledstatuspi.gif'
-ImageFilePathOut = config['telegram']['ImageFilePathOut']
-#'/dev/shm/oledstatuspout.gif'
-CODEWORD = config['telegram']['CODEWORD']
+config.read(CONFIG_FILES)
+BOT_TOKEN = config["telegram"]["bot_token"]
+CHAT_ID = str(config["telegram"]["bot_chatID"])
+IMAGE_PATH = Path(config["telegram"]["ImageFilePath"])
+OUTPUT_PATH = Path(config["telegram"]["ImageFilePathOut"])
+CODEWORD = config["telegram"]["CODEWORD"]
+API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
+POLL_TIMEOUT = 50
+HTTP_TIMEOUT = (10, 65)
+RETRY_DELAY = 5
+MULTI_PI_DELAY = 7
 
-def getupdates_telegram(bot_token, update_id):
-    send_text = 'https://api.telegram.org/bot' + bot_token + '/getUpdates?offset=' + str(update_id) + '&timeout=50'
-    print (send_text)
-    response = requests.get(send_text)
-    print (response.content)
-    return response.json()
+session = requests.Session()
 
-def telegram_bot_sendtext(bot_message, bot_token, bot_chatID):
-    send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' + bot_chatID + '&parse_mode=Markdown&text=' + bot_message
-    response = requests.get(send_text)
-    return response.json()
+def telegram_request(method, endpoint, **kwargs):
+    response = session.request(
+        method,
+        f"{API_URL}/{endpoint}",
+        timeout=kwargs.pop("timeout", (10, 30)),
+        **kwargs,
+    )
+    response.raise_for_status()
+    result = response.json()
+    if not result.get("ok"):
+        raise RuntimeError(
+            f"Telegram API error: {result.get('error_code', 'unknown')}"
+        )
+    return result
+def get_updates(offset):
+    return telegram_request(
+        "GET",
+        "getUpdates",
+        params={"offset": offset, "timeout": POLL_TIMEOUT},
+        timeout=HTTP_TIMEOUT,
+    ).get("result", [])
+def send_image():
+    with Image.open(IMAGE_PATH) as image:
+        background = Image.new("RGB", (256, 130), (0, 0, 0))
+        background.paste(image.convert("RGB"), (64, 1))
+        background.save(OUTPUT_PATH)
+    for attempt in range(1, 4):
+        try:
+            with OUTPUT_PATH.open("rb") as photo:
+                telegram_request("POST", "sendPhoto", data={"chat_id": CHAT_ID}, files={"photo": photo}, timeout=(10, 60))
+            logger.info("OLED image sent successfully")
+            return
+        except requests.RequestException as exc:
+            logger.warning("Photo upload attempt %d/3 failed: %s", attempt, type(exc).__name__)
+            if attempt == 3:
+                raise
+            time.sleep(5)
 
-def sendImage(ImageFilePathOut, bot_token, bot_chatID):
-    url = "https://api.telegram.org/bot" + bot_token + "/sendPhoto";
-    files = {'photo': open(ImageFilePathOut, 'rb')}
-    data = {'chat_id' : bot_chatID}
-    r = requests.post(url, files=files, data=data)
+def main():
+    offset = 0
+    pending = False
+    logger.info("Starting Telegram bot; waiting for OLED image")
+    time.sleep(15)
+    while True:
+        if pending:
+            try:
+                send_image()
+                pending = False
+                time.sleep(MULTI_PI_DELAY)
+            except (requests.RequestException, RuntimeError, OSError, ValueError) as exc:
+                logger.warning("Pending image delivery failed: %s", type(exc).__name__)
+                time.sleep(RETRY_DELAY)
+            continue
+        try:
+            updates = get_updates(offset)
+            for update in updates:
+                offset = max(offset, update["update_id"] + 1)
+                message = update.get("message", {})
+                text = message.get("text", "")
+                chat_id = str(message.get("chat", {}).get("id", ""))
+                if chat_id == CHAT_ID and CODEWORD in text:
+                    logger.info("Authorized codeword received")
+                    pending = True
+        except (requests.RequestException, ValueError, RuntimeError, KeyError, TypeError) as exc:
+            logger.warning("Telegram polling error: %s", type(exc).__name__)
+            time.sleep(RETRY_DELAY)
 
-update_id = 0
-count = 0
-Match = False
-#print (count)
-
-# Sleep 15 seconds to prevent error at reboot (other python script needs to have created the output file)
-time.sleep(15) 
-
-while True:
-     telegram = getupdates_telegram(bot_token, update_id)
-     print (telegram)
-     if telegram['ok']:
-          telegramMSG = telegram['result']
-          for i in range(len(telegramMSG)):
-               telegramMSGx = telegramMSG[i]
-               update_id = telegramMSGx['update_id']
-               try:
-                    text = telegramMSGx['message']['text']
-               except:
-                    text = ''
-               finally:
-                    #print (update_id)
-                    #print (text)
-                    if CODEWORD in text:
-                         Match = True
-                         #print ('Match')
-                    if "Debug" in text:
-                         Debug = True
-                         DebugOut1 = telegram_bot_sendtext(str(telegramMSG), bot_token, bot_chatID)
-                         DebugOut2 = telegram_bot_sendtext('https://api.telegram.org/bot' + bot_token + '/getUpdates?offset=' + str(update_id) + '&timeout=50', bot_token, bot_chatID)
-               update_id += 1
-
-          if Match:
-               image = Image.open(ImageFilePath, 'r')
-               background = Image.new('RGB', (256, 130), (0, 0, 0))
-               offset = (64, 1)
-               background.paste(image, offset)
-               background.save(ImageFilePathOut)
-               test2 = sendImage(ImageFilePathOut, bot_token, bot_chatID)
-               #print (test2)
-               # Reset Match to catch new matches in next cycle
-               Match = False
-               # Add a delay to allow other machines to catch the Codeword request too
-               # (otherwise the first script to catch the request message will delete it immediately
-               time.sleep(7)
-     else:
-          #print ('Telegram error')
-          update_id = 0 #reset update id
-          time.sleep(5)
-
-     count += 1
+if __name__ == "__main__":
+    main()

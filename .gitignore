@@ -6,3 +6,5 @@ __pycache__/
 *.py[cod]
 .venv/
 *.log
+*.backup-*
+oled2telegram.new.py
