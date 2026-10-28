@@ -1,0 +1,8 @@
+oledstatuspi.local.conf
+oledstatuspi.local.conf.*
+*.backup
+*.save
+__pycache__/
+*.py[cod]
+.venv/
+*.log
