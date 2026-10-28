@@ -4,7 +4,10 @@
 
  [Service]
  User=pi
- Type=idle
+ Type=simple
+Restart=always
+RestartSec=10
+TimeoutStopSec=15
  ExecStart=/usr/bin/python3 -u /home/pi/oledscript/oled2telegram.py
 
  [Install]
