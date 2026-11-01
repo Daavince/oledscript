@@ -8,3 +8,5 @@ __pycache__/
 *.log
 *.backup-*
 oled2telegram.new.py
+
+archive/
