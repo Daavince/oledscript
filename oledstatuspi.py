@@ -34,31 +34,51 @@ LINE09 = config['statusselection']['LINE09'].split(",")
 LINE10 = config['statusselection']['LINE10'].split(",")
 LINES = [LINE01, LINE02, LINE03, LINE04, LINE05, LINE06, LINE07, LINE08, LINE09, LINE10]
 
-# Configuration for CS and DC pins (these are PiTFT defaults):
-cs_pin = digitalio.DigitalInOut(board.CE0)
-dc_pin = digitalio.DigitalInOut(board.D24)
-reset_pin = digitalio.DigitalInOut(board.D25)
-# Config for display baudrate (default max is 24mhz):
+# SSD1351 framebuffer dimensions are independent of physical display availability.
 BAUDRATE = 24000000
-# Setup SPI bus using hardware SPI:
-spi = board.SPI()
-disp = ssd1351.SSD1351(                         # 1.5" SSD1351
-    spi,
-    rotation=DisplayRotation,  # 2.2", 2.4", 2.8", 3.2" ILI9341
-    cs=cs_pin,
-    dc=dc_pin,
-    rst=reset_pin,
-    baudrate=BAUDRATE,
-)
-# pylint: enable=line-too-long
-# Create blank image for drawing.
-# Make sure to create image with mode 'RGB' for full color.
-if disp.rotation % 180 == 90:
-    height = disp.width  # we swap height/width to rotate it to landscape!
-    width = disp.height
-else:
-    width = disp.width  # we swap height/width to rotate it to landscape!
-    height = disp.height
+width, height = (128, 128)
+disp = None
+last_display_retry = 0.0
+cs_pin = dc_pin = reset_pin = None
+
+def release_display():
+    global disp, cs_pin, dc_pin, reset_pin
+    disp = None
+    for pin in (reset_pin, dc_pin, cs_pin):
+        if pin is not None:
+            try:
+                pin.deinit()
+            except (OSError, RuntimeError, ValueError):
+                pass
+    cs_pin = dc_pin = reset_pin = None
+
+def initialize_display():
+    global disp, last_display_retry, cs_pin, dc_pin, reset_pin
+    last_display_retry = time.monotonic()
+    release_display()
+    try:
+        cs_pin = digitalio.DigitalInOut(board.CE0)
+        dc_pin = digitalio.DigitalInOut(board.D24)
+        reset_pin = digitalio.DigitalInOut(board.D25)
+        spi = board.SPI()
+        disp = ssd1351.SSD1351(spi, rotation=DisplayRotation, cs=cs_pin, dc=dc_pin, rst=reset_pin, baudrate=BAUDRATE)
+    except (OSError, RuntimeError, ValueError) as exc:
+        print(f"OLED initialization failed: {exc}", flush=True)
+        release_display()
+
+initialize_display()
+def update_display(frame):
+    global disp
+    if disp is None and time.monotonic() - last_display_retry >= 30:
+        initialize_display()
+    if disp is not None:
+        try:
+            disp.image(frame)
+        except (OSError, RuntimeError, ValueError) as exc:
+            print(f"OLED update failed: {exc}", flush=True)
+            release_display()
+
+# Create the RGB framebuffer even if no OLED is attached.
 image = Image.new("RGB", (width, height))
 # Get drawing object to draw on image.
 draw = ImageDraw.Draw(image)
@@ -81,7 +101,7 @@ def draw_text_buster(xy, text, font=None, fill=None, **kwargs):
 
 # Draw a black filled box to clear the image.
 draw.rectangle((0, 0, width, height), outline="#000000", fill="#000000")
-disp.image(image)
+update_display(image)
 
 # Load a TTF font.
 # Some other nice fonts to try: http://www.dafont.com/bitmap.php
@@ -437,11 +457,9 @@ while True:
      else:
           LowRefreshCount += 1
 
-     # Display image.
-     disp.image(image)
-
-     #if LowRefreshCount == 1:
+     # Save screenshot independently of physical OLED availability.
      image.save("/dev/shm/oledstatuspi.gif", "GIF")
+     update_display(image)
      time.sleep(RefreshTime)
 
 
