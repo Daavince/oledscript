@@ -84,19 +84,13 @@ image = Image.new("RGB", (width, height))
 draw = ImageDraw.Draw(image)
 
 # Pillow/FreeType on Buster rendered VCR OSD Mono 11px with an exact
-
 # 6-pixel character advance. Preserve that layout on Bookworm.
 
 _original_draw_text = draw.text
-
 def draw_text_buster(xy, text, font=None, fill=None, **kwargs):
-
     x, y = xy
-
     for char in str(text):
-
         _original_draw_text((x, y), char, font=font, fill=fill, **kwargs)
-
         x += 6
 
 # Draw a black filled box to clear the image.
