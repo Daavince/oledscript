@@ -74,7 +74,23 @@ def main():
     offset = 0
     pending = False
     logger.info("Starting Telegram bot; waiting for OLED image")
-    time.sleep(15)
+    started = time.time()
+    deadline = started + 60
+    startup_sent = False
+    while time.time() < deadline:
+        try:
+            if IMAGE_PATH.stat().st_mtime >= started:
+                with Image.open(IMAGE_PATH) as image:
+                    image.verify()
+                send_image()
+                startup_sent = True
+                logger.info("Startup OLED image delivered")
+                break
+        except (OSError, ValueError, requests.RequestException, RuntimeError) as exc:
+            logger.warning("Startup OLED image not ready: %s", type(exc).__name__)
+        time.sleep(2)
+    if not startup_sent:
+        logger.warning("Startup OLED image not delivered within readiness window")
     while True:
         if pending:
             try:
