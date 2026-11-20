@@ -154,6 +154,38 @@ cmd = "nproc"
 NrCores = subprocess.check_output(cmd, shell=True).decode("utf-8")
 
 def ServiceStatus(Service, Type):
+     if Type == "SystemCtl" and Service.endswith(".timer"):
+          try:
+               properties = subprocess.check_output(["systemctl", "show", Service, "-p", "ActiveState", "-p", "SubState", "-p", "ActiveEnterTimestampMonotonic"], text=True)
+               values = dict(line.split("=", 1) for line in properties.splitlines() if "=" in line)
+               if values.get("ActiveState") == "failed":
+                    return "ERx", ""
+               if values.get("ActiveState") != "active":
+                    return "NOx", ""
+               if values.get("SubState") not in ("waiting", "running"):
+                    return "??x", ""
+               started = int(values.get("ActiveEnterTimestampMonotonic", "0"))
+               uptimeS = max(0, int(float(__import__("pathlib").Path("/proc/uptime").read_text().split()[0]) - started / 1000000)) if started > 0 else 0
+               uptime = str(round(int(float(uptimeS)) / TimeDenom)) if started > 0 else ""
+               return "OKx", uptime
+          except (OSError, ValueError, subprocess.CalledProcessError):
+               return "??x", ""
+     if Type == "SystemCtl" and Service.endswith(".service"):
+          try:
+               properties = subprocess.check_output(["systemctl", "show", Service, "-p", "Type", "-p", "ActiveState", "-p", "Result", "-p", "ExecMainStatus", "-p", "ExecMainExitTimestampMonotonic"], text=True)
+               values = dict(line.split("=", 1) for line in properties.splitlines() if "=" in line)
+               if values.get("Type") == "oneshot":
+                    state = values.get("ActiveState")
+                    if state == "failed": return "ERx", ""
+                    if state == "activating": return "OKx", ""
+                    if state == "inactive" and values.get("Result") == "success" and values.get("ExecMainStatus") == "0" and int(values.get("ExecMainExitTimestampMonotonic", "0")) > 0:
+                         finished = int(values["ExecMainExitTimestampMonotonic"])
+                         uptimeS = max(0, int(float(__import__("pathlib").Path("/proc/uptime").read_text().split()[0]) - finished / 1000000))
+                         uptime = str(round(int(float(uptimeS)) / TimeDenom))
+                         return "OKx", uptime
+                    return "NOx", ""
+          except (OSError, ValueError, subprocess.CalledProcessError):
+               return "??x", ""
      if Type == "SystemCtl":
           Before = "systemctl status"
           After = ""
