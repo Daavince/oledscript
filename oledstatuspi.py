@@ -104,7 +104,8 @@ font1 = ImageFont.truetype(FontLocation, FontSize)
 # First define some constants to allow easy positioning of text.
 padding = -2
 indent = 1
-spacing = font1.getsize("Test")[1]
+line_height = font1.getbbox("Test")[3]
+spacing = line_height
 x = 0
 y = 0
 
@@ -333,16 +334,16 @@ while True:
      x = indent
      y = padding
 
-     draw.rectangle((0, y+1, 128, y + 3 * font1.getsize("Test")[1]), outline="#000000", fill="#000000")
+     draw.rectangle((0, y+1, 128, y + 3 * line_height), outline="#000000", fill="#000000")
 
      draw_text_buster((x, y), "T    |CPU    |RAM    ".format(Temp, CPUspaces, CPU, RAMspaces, RAM), font=font1, fill="#0077FF")
      draw_text_buster((x, y), "  {}C    {}{}%    {}{}%".format(Temp, CPUspaces, CPU, RAMspaces, RAM), font=font1, fill="#FFFFFF")
-     y += font1.getsize("Test")[1]
+     y += line_height
      draw_text_buster((x, y), "DISK    |", font=font1, fill="#0077FF")
      draw_text_buster((x, y), "    {}{}".format(Diskspaces, Disk), font=font1, fill="#FFFFFF")
      draw_text_buster((x, y), "         {}".format(IP1), font=font1, fill="#FFFFFF")
      draw_text_buster((x, y), "         {}".format(IP2), font=font1, fill="#FF00FF")
-     y += font1.getsize("Test")[1]
+     y += line_height
      #draw.rectangle((x-1, y+1, x-1+width, y+9), outline=(11, 103, 97), fill=(11, 103, 97))
      #draw.rectangle((x+1, y+2, x+6, y+7), outline="#0077FF", fill="#0077FF")
      if OddRun:
