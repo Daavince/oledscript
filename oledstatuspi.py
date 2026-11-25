@@ -112,7 +112,7 @@ y = 0
 # Prepare configuration for evaluation and drawing (expand the split lines)
 numinserts = 0
 for j in range(len(LINES)):
-     if len(LINES[j+numinserts]) > 4:
+     if len(LINES[j+numinserts]) > 4 and LINES[j+numinserts][1] != "SPLIT":
           if LINES[j+numinserts][4] == "SPLIT":
                LINES.insert(j+1+numinserts, LINES[j+numinserts][5:])
                LINES[j+numinserts] = LINES[j+numinserts][0:4]
