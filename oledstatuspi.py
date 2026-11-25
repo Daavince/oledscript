@@ -418,7 +418,7 @@ while True:
                StatusColor = SetColor(Power)
                if LINES[i][0] == 'S':
                     draw.rectangle((0 + LINES[i][2], y, 64 + LINES[i][2], y + spacing), outline=0, fill=0)
-                    draw_text_buster((x-3+LINES[i][2], y), "   PWR", font=font1, fill="#0077FF")
+                    draw_text_buster((x-3+LINES[i][2], y), "   POWR", font=font1, fill="#0077FF")
                     draw_text_buster((x+LINES[i][2], y), "      {}{}".format("     "[:1+3-len(PowerUp)], PowerUp), font=font1, fill="#0077FF")
                else:
                     draw.rectangle((0, y, 128, y + spacing), outline=0, fill=0)
@@ -451,6 +451,14 @@ while True:
                     draw_text_buster((x+LINES[i][2], y), "{}                   ".format(LINESTATUS[7][0:2]), font=font1, fill="#000000")
                     draw_text_buster((x-3, y), "   {}".format(LINESTATUS[6]), font=font1, fill=StatusColor)
                     draw_text_buster((x, y), "             {}{}{}{}%".format("    "[0:4-len(LINESTATUS[8])], LINESTATUS[8], "   "[0:3-len(LINESTATUS[9])], LINESTATUS[9]), font=font1, fill=StatusColor)
+               elif LINES[i][4] == 'DrivePercent':
+                    LINESTATUS = LINES[i] + list(DriveStatus(LINES[i][5]))
+                    StatusColor = SetColor(LINESTATUS[7])
+                    offset = LINES[i][2]
+                    draw.rectangle((x-1+offset, y+1, x+12+offset, y+9), outline=StatusColor, fill=StatusColor)
+                    draw_text_buster((x+offset, y), "{}".format(LINESTATUS[7][0:2]), font=font1, fill="#000000")
+                    draw_text_buster((x-3+offset, y), "   {}".format(LINESTATUS[6][:4]), font=font1, fill=StatusColor)
+                    draw_text_buster((x+offset, y), "       {}%".format(LINESTATUS[9]), font=font1, fill=StatusColor)
                elif LINES[i][4] == 'Connectivity':
                     if len(LINES[i]) == 7:
                          LINES[i] = LINES[i] + [ConnectionLastDown]
