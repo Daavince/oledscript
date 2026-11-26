@@ -143,7 +143,7 @@ TimeDenom = 1
 MediumRefreshCount = 1 #LoopsBeforeRefreshMedium
 LowRefreshCount = 1 #LoopsBeforeRefreshLow
 FirstRun = True
-OddRun = True
+activity_step = 1
 
 # First, some checks are only one-off and need not to be checked repeatedly
 # OS version (one-off as cannot change without reboot)
@@ -378,18 +378,11 @@ while True:
      y += line_height
      #draw.rectangle((x-1, y+1, x-1+width, y+9), outline=(11, 103, 97), fill=(11, 103, 97))
      #draw.rectangle((x+1, y+2, x+6, y+7), outline="#0077FF", fill="#0077FF")
-     if OddRun:
-          draw.rectangle((x+2, y+2, x+4, y+4), outline="#00FF00", fill="#00FF00")
-          draw.rectangle((x+6, y+6, x+8, y+8), outline="#00FF00", fill="#00FF00")
-          draw.rectangle((x+6, y+2, x+8, y+4), outline="#0077FF", fill="#0077FF")
-          draw.rectangle((x+2, y+6, x+4, y+8), outline="#0077FF", fill="#0077FF")
-          OddRun = False
-     else:
-          draw.rectangle((x+6, y+2, x+8, y+4), outline="#00FF00", fill="#00FF00")
-          draw.rectangle((x+2, y+6, x+4, y+8), outline="#00FF00", fill="#00FF00")
-          draw.rectangle((x+2, y+2, x+4, y+4), outline="#0077FF", fill="#0077FF")
-          draw.rectangle((x+6, y+6, x+8, y+8), outline="#0077FF", fill="#0077FF")
-          OddRun = True
+     activity_positions = ((2, 2), (6, 2), (6, 6), (2, 6))
+     for index, (dx, dy) in enumerate(activity_positions):
+          color = "#00FF00" if index < activity_step else "#000000"
+          draw.rectangle((x+dx, y+dy, x+dx+2, y+dy+2), fill=color)
+     activity_step = (activity_step + 1) % 5
      draw_text_buster((x, y), "  SERVICE UP ({})".format(UnitTime), font=font1, fill="#0077FF")
 
      #y += spacing
