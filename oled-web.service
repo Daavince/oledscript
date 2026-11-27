@@ -1,0 +1,13 @@
+[Unit]
+Description=Serve the OLED status GIF on the local network
+After=network.target
+
+[Service]
+User=pi
+ExecStart=/usr/bin/python3 /home/pi/oledscript/oled_web.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
